@@ -5,9 +5,15 @@ ENV APACHE_DOCUMENT_ROOT /var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
 RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
-# Fix MPM conflict: mod_php requires mpm_prefork (NOT mpm_event/worker)
-RUN a2dismod mpm_event mpm_worker 2>/dev/null || true \
-    && a2enmod mpm_prefork \
+# Fix MPM conflict: forcefully remove ALL MPM modules then add only prefork
+RUN rm -f /etc/apache2/mods-enabled/mpm_*.load \
+          /etc/apache2/mods-enabled/mpm_*.conf \
+    && ln -sf /etc/apache2/mods-available/mpm_prefork.load \
+              /etc/apache2/mods-enabled/mpm_prefork.load \
+    && if [ -f /etc/apache2/mods-available/mpm_prefork.conf ]; then \
+         ln -sf /etc/apache2/mods-available/mpm_prefork.conf \
+                /etc/apache2/mods-enabled/mpm_prefork.conf; \
+       fi \
     && a2enmod rewrite
 
 # Install system dependencies
