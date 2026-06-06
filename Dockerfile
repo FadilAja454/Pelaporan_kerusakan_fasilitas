@@ -5,8 +5,10 @@ ENV APACHE_DOCUMENT_ROOT /var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
 RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
-# Enable Apache mod_rewrite
-RUN a2enmod rewrite
+# Fix: Disable conflicting MPMs, enable only one (mpm_event)
+RUN a2dismod mpm_prefork mpm_worker mpm_event 2>/dev/null || true \
+    && a2enmod mpm_event \
+    && a2enmod rewrite
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
